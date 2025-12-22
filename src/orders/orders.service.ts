@@ -1,10 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PrismaService } from '../prisma.service';
-
+import { ClientProxy } from '@nestjs/microservices';
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    // On injecte le client RabbitMQ défini dans le module
+    @Inject('PRODUCT_SERVICE') private readonly productClient: ClientProxy,
+  ) {}
 
   async create(userId: string, createOrderDto: CreateOrderDto) {
     // 1. Calcul du total
@@ -12,8 +16,8 @@ export class OrdersService {
       return acc + item.price * item.quantity;
     }, 0);
 
-    // 2. Création de la commande ET des lignes (Transactionnelle via Prisma)
-    return this.prisma.order.create({
+    // 2. Création en BDD
+    const newOrder = await this.prisma.order.create({
       data: {
         userId: userId,
         total: totalAmount,
@@ -27,9 +31,15 @@ export class OrdersService {
         },
       },
       include: {
-        items: true, // Pour renvoyer l'objet complet avec les items
+        items: true,
       },
     });
+
+    // 3. RABBITMQ : On crie dans le tuyau "Une commande a été créée !"
+    // Pattern: 'order_created' | Payload: la commande entière
+    this.productClient.emit('order_created', newOrder);
+
+    return newOrder;
   }
 
   // Voir toutes les commandes (Pour ADMIN)
