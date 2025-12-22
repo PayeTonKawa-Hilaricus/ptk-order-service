@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Statut de la commande
+enum OrderStatus {
+  PENDING   // En attente
+  PAID      // Payée (Stock décrémenté)
+  CANCELLED // Annulée
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  userId      String      // L'id du client qui commande
+  total       Float       // Somme totale
+  status      OrderStatus @default(PENDING)
+  
+  items       OrderItem[] // Relation One-to-Many
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String  // ID du produit (référence logique vers Product Service)
+  quantity  Int
+  price     Float   // Prix unitaire au moment de l'achat
+
+  @@map("order_items")
+}
