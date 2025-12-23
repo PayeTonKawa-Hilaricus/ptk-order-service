@@ -17,7 +17,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
           ],
           queue: 'orders_queue', // Nom de la file d'attente
           queueOptions: {
-            durable: false, // La file n'est pas persistante (plus simple pour le dev)
+            durable: true, // La file d'attente persiste même si RabbitMQ redémarre
           },
         },
       },
