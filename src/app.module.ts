@@ -5,7 +5,11 @@ import { JwtStrategy } from './auth/jwt.strategy';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus/dist/module';
 
 @Module({
-  imports: [OrdersModule, PassportModule.register({ defaultStrategy: 'jwt' }), PrometheusModule.register(),],
+  imports: [
+    OrdersModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    PrometheusModule.register(),
+  ],
   providers: [JwtStrategy],
 })
 export class AppModule {}

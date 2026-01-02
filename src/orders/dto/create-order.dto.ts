@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsNumber, IsString, IsArray, ValidateNested, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  IsArray,
+  ValidateNested,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 // DTO pour un article unique dans le panier
@@ -22,6 +29,6 @@ class OrderItemDto {
 export class CreateOrderDto {
   @IsArray()
   @ValidateNested({ each: true }) // Valide chaque élément du tableau
-  @Type(() => OrderItemDto)       // Transforme le JSON en objets OrderItemDto
+  @Type(() => OrderItemDto) // Transforme le JSON en objets OrderItemDto
   items: OrderItemDto[];
 }

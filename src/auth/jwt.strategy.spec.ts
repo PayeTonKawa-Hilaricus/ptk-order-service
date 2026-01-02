@@ -18,9 +18,13 @@ describe('JwtStrategy', () => {
 
   it('validate() devrait renvoyer les infos utilisateur', async () => {
     const payload = { sub: 'user-123', email: 'test@test.com', role: 'USER' };
-    
+
     const result = await strategy.validate(payload);
-    
-    expect(result).toEqual({ userId: 'user-123', email: 'test@test.com', role: 'USER' });
+
+    expect(result).toEqual({
+      userId: 'user-123',
+      email: 'test@test.com',
+      role: 'USER',
+    });
   });
 });
