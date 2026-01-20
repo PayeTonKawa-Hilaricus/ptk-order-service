@@ -20,16 +20,19 @@ export class OrdersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Post()
-  create(@Request() req, @Body() createOrderDto: CreateOrderDto) {
-    // On passe l'ID de l'utilisateur connecté
-    return this.ordersService.create(req.user.userId, createOrderDto);
+  // 1. On ajoute ": any" ici
+  create(@Request() req: any, @Body() createOrderDto: CreateOrderDto) {
+    // 2. On force le type string ici
+    return this.ordersService.create(req.user.userId as string, createOrderDto);
   }
 
   // Route pour voir MES commandes
   @UseGuards(AuthGuard('jwt'))
   @Get('my-orders')
-  findMyOrders(@Request() req) {
-    return this.ordersService.findMyOrders(req.user.userId);
+  // 1. On ajoute ": any" ici
+  findMyOrders(@Request() req: any) {
+    // 2. On force le type string ici
+    return this.ordersService.findMyOrders(req.user.userId as string);
   }
 
   // Route pour voir TOUTES les commandes (Idéalement AdminGuard ici)

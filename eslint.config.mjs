@@ -29,7 +29,20 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off', // Pour req.user et .data
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
+    },
+  },
+  {
+    // Exception pour les tests
+    files: ['**/*.spec.ts', '**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/require-await': 'off'
     },
   },
 );

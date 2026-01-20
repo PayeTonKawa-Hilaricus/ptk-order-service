@@ -16,10 +16,10 @@ describe('JwtStrategy', () => {
     expect(strategy).toBeDefined();
   });
 
-  it('validate() devrait renvoyer les infos utilisateur', async () => {
+  it('validate() devrait renvoyer les infos utilisateur', () => {
     const payload = { sub: 'user-123', email: 'test@test.com', role: 'USER' };
 
-    const result = await strategy.validate(payload);
+    const result = strategy.validate(payload);
 
     expect(result).toEqual({
       userId: 'user-123',
