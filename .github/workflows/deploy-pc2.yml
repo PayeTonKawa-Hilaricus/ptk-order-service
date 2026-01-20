@@ -17,10 +17,10 @@ jobs:
           # --- CONFIGURATION DES CHEMINS ---
           $ROOT = "C:\PayeTonKawa"
           $INFRA_DIR = "$ROOT\ptk-infrastructure"
-          
+
           # Le nom du dossier actuel (GitHub nous le donne, ex: ptk-auth-service)
           $SERVICE_NAME = "${{ github.event.repository.name }}"
-          
+
           Write-Host "🔥 DÉPLOIEMENT DU SERVICE : $SERVICE_NAME"
 
           # 1. Mettre à jour le code du Micro-Service
@@ -47,5 +47,5 @@ jobs:
 
           # 5. Nettoyage
           docker image prune -f
-          
+
           Write-Host "✅ Succès ! $SERVICE_NAME est à jour."
