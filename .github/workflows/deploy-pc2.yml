@@ -1,0 +1,51 @@
+name: 🚀 Deploy to PC2
+
+on:
+  push:
+    branches: ['main'] # Se déclenche quand tu pushes sur main
+
+jobs:
+  deploy-pc2:
+    runs-on: [self-hosted, production-pc] # Ton PC2
+    steps:
+      - name: 🚚 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔄 Update & Restart
+        shell: pwsh
+        run: |
+          # --- CONFIGURATION DES CHEMINS ---
+          $ROOT = "C:\PayeTonKawa"
+          $INFRA_DIR = "$ROOT\ptk-infrastructure"
+          
+          # Le nom du dossier actuel (GitHub nous le donne, ex: ptk-auth-service)
+          $SERVICE_NAME = "${{ github.event.repository.name }}"
+          
+          Write-Host "🔥 DÉPLOIEMENT DU SERVICE : $SERVICE_NAME"
+
+          # 1. Mettre à jour le code du Micro-Service
+          cd "$ROOT\$SERVICE_NAME"
+          git fetch origin
+          git reset --hard origin/main
+
+          # 2. Mettre à jour l'Infrastructure (Docker Compose)
+          # Au cas où tu aurais modifié le docker-compose.yml
+          cd $INFRA_DIR
+          git pull origin main
+
+          # 3. Générer le fichier .env DANS LE DOSSIER INFRASTRUCTURE
+          # (C'est là qu'il est sur ton screenshot !)
+          echo "DATABASE_URL=${{ secrets.AUTH_DATABASE_URL }}" > .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> .env
+          echo "PORT=3000" >> .env
+          # Ajoute les autres variables nécessaires ici...
+
+          # 4. Relancer le conteneur spécifique
+          # On execute la commande DEPUIS le dossier ptk-infrastructure
+          docker-compose up -d --build --no-deps $SERVICE_NAME
+
+          # 5. Nettoyage
+          docker image prune -f
+          
+          Write-Host "✅ Succès ! $SERVICE_NAME est à jour."
