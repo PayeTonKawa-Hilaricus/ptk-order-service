@@ -47,7 +47,7 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          extra_args: --debug --only-verified --no-verification 
+          extra_args: --debug --only-verified --no-verification
 
   # ===========================================================================
   # JOB 2: TESTING (UNIT, INTEGRATION, CONTRACT)
