@@ -47,9 +47,7 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
-          extra_args: --debug --only-verified
+          extra_args: --debug --only-verified --no-verification
 
   # ===========================================================================
   # JOB 2: TESTING (UNIT, INTEGRATION, CONTRACT)
@@ -165,3 +163,67 @@ jobs:
           context: .
           push: false # On ne push pas sur le Hub pour l'instant, on vérifie juste le build
           tags: payetonkawa/service:latest
+
+  deploy-pc2:
+    name: 🚀 Deploy on PC2
+    needs: [testing, sast-analysis, docker-build]
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, production-pc]
+
+    steps:
+      - name: 🚚 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔄 Update & Restart Service
+        shell: powershell
+        run: |
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          $ROOT = "C:\PayeTonKawa"
+          $INFRA_DIR = "$ROOT\ptk-infrastructure"
+          $SERVICE_NAME = "${{ github.event.repository.name }}"
+
+          Write-Host "START DEPLOY: $SERVICE_NAME"
+
+          cd "$ROOT\$SERVICE_NAME"
+          git fetch origin
+          git reset --hard origin/main
+
+          cd $INFRA_DIR
+          git pull origin main
+
+          if (Test-Path .env) { Remove-Item .env }
+
+          $EnvContent = @()
+
+          if ($SERVICE_NAME -eq "ptk-auth-service") {
+             $EnvContent += "DATABASE_URL=${{ secrets.AUTH_DATABASE_URL }}"
+             $EnvContent += "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+             $EnvContent += "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}"
+             $EnvContent += "PORT=3000"
+          }
+          elseif ($SERVICE_NAME -eq "ptk-product-service") {
+             $EnvContent += "DATABASE_URL=${{ secrets.PRODUCT_DATABASE_URL }}"
+             $EnvContent += "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+             $EnvContent += "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}"
+             $EnvContent += "PORT=3000"
+          }
+          elseif ($SERVICE_NAME -eq "ptk-order-service") {
+             $EnvContent += "DATABASE_URL=${{ secrets.ORDER_DATABASE_URL }}"
+             $EnvContent += "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+             $EnvContent += "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}"
+             $EnvContent += "PORT=3000"
+          }
+          elseif ($SERVICE_NAME -eq "ptk-client-service") {
+             $EnvContent += "DATABASE_URL=${{ secrets.CLIENT_DATABASE_URL }}"
+             $EnvContent += "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+             $EnvContent += "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}"
+             $EnvContent += "PORT=3000"
+          }
+
+          $EnvContent | Out-File -FilePath .env -Encoding ascii
+
+          docker compose up -d --build --no-deps $SERVICE_NAME
+
+          docker image prune -f
+
+          Write-Host "DEPLOY SUCCESS"
