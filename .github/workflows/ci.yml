@@ -175,6 +175,9 @@ jobs:
       - name: 🚚 Checkout Code
         uses: actions/checkout@v4
 
+      - name: 🚚 Checkout Code
+        uses: actions/checkout@v4
+
       - name: 🔄 Update & Restart Service
         shell: powershell
         run: |
@@ -192,16 +195,17 @@ jobs:
           git reset --hard origin/main
 
           # 2. Mise à jour de l'Infrastructure
-          # C'est ICI qu'on va travailler pour la suite
           Write-Host "🏗️ Mise à jour de l'infra..."
           cd $INFRA_DIR
           git pull origin main
 
-          # 3. Génération du .env DANS le dossier INFRA (là où est le docker-compose)
+          # 3. Génération du .env DANS le dossier INFRA
           Write-Host "🔑 Génération des secrets..."
 
-          # On nettoie l'ancien .env pour être sûr
           if (Test-Path .env) { Remove-Item .env }
+
+          # NOTE : On met PORT=3000 partout car c'est le port INTERNE du conteneur.
+          # Docker fait le mapping vers l'extérieur (ex: 3002->3000) automatiquement.
 
           if ($SERVICE_NAME -eq "ptk-auth-service") {
              echo "DATABASE_URL=${{ secrets.AUTH_DATABASE_URL }}" >> .env
@@ -213,22 +217,22 @@ jobs:
              echo "DATABASE_URL=${{ secrets.PRODUCT_DATABASE_URL }}" >> .env
              echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
              echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> .env
-             echo "PORT=3002" >> .env
+             echo "PORT=3000" >> .env
           }
           elseif ($SERVICE_NAME -eq "ptk-order-service") {
              echo "DATABASE_URL=${{ secrets.ORDER_DATABASE_URL }}" >> .env
              echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
              echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> .env
-             echo "PORT=3001" >> .env
+             echo "PORT=3000" >> .env
           }
           elseif ($SERVICE_NAME -eq "ptk-client-service") {
              echo "DATABASE_URL=${{ secrets.CLIENT_DATABASE_URL }}" >> .env
              echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
              echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> .env
-             echo "PORT=3003" >> .env
+             echo "PORT=3000" >> .env
           }
 
-          # 4. Relancer le conteneur (Depuis le dossier INFRA)
+          # 4. Relancer le conteneur
           Write-Host "🐳 Redémarrage du conteneur..."
           docker-compose up -d --build --no-deps $SERVICE_NAME
 
