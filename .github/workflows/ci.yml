@@ -177,7 +177,7 @@ jobs:
       - name: 🔄 Update & Restart Service
         shell: powershell
         run: |
-          # Correction de l'affichage des caractères spéciaux dans les logs
+          # Correction de l'affichage des caracteres speciaux
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
           # --- CONFIGURATION ---
@@ -185,26 +185,26 @@ jobs:
           $INFRA_DIR = "$ROOT\ptk-infrastructure"
           $SERVICE_NAME = "${{ github.event.repository.name }}"
 
-          Write-Host "🔥 DÉBUT DU DÉPLOIEMENT : $SERVICE_NAME"
+          Write-Host "🔥 DEBUT DU DEPLOIEMENT : $SERVICE_NAME"
 
-          # 1. Mise à jour du code source
+          # 1. Mise a jour du code source
           Write-Host "📥 Pull du code source..."
           cd "$ROOT\$SERVICE_NAME"
           git fetch origin
           git reset --hard origin/main
 
-          # 2. Mise à jour de l'Infrastructure
-          Write-Host "🏗️ Mise à jour de l'infra..."
+          # 2. Mise a jour de l'Infrastructure
+          Write-Host "🏗️ Mise a jour de l'infra..."
           cd $INFRA_DIR
           git pull origin main
 
-          # 3. Génération du .env (CORRECTION ENCODAGE ASCII)
-          Write-Host "🔑 Génération des secrets..."
+          # 3. Generation du .env (CORRECTION ENCODAGE ASCII)
+          Write-Host "🔑 Generation des secrets..."
 
           # On supprime l'ancien fichier s'il existe
           if (Test-Path .env) { Remove-Item .env }
 
-          # On prépare le contenu dans une variable (plus propre)
+          # On prepare le contenu dans une variable
           $EnvContent = @()
 
           if ($SERVICE_NAME -eq "ptk-auth-service") {
@@ -232,15 +232,15 @@ jobs:
              $EnvContent += "PORT=3000"
           }
 
-          # ÉCRITURE DU FICHIER EN ASCII FORCE (C'est la clé du fix !)
+          # ECRITURE DU FICHIER EN ASCII FORCE - C est la cle du fix
           $EnvContent | Out-File -FilePath .env -Encoding ascii
 
           # 4. Relancer le conteneur
-          Write-Host "🐳 Redémarrage du conteneur..."
-          # Note : Utilisation de 'docker compose' (avec espace)
+          Write-Host "🐳 Redemarrage du conteneur..."
+          # Note : Utilisation de 'docker compose' avec espace
           docker compose up -d --build --no-deps $SERVICE_NAME
 
           # 5. Nettoyage
           docker image prune -f
 
-          Write-Host "✅ Succès ! $SERVICE_NAME est déployé."
+          Write-Host "✅ Succes ! $SERVICE_NAME est deploye."
