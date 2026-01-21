@@ -166,7 +166,6 @@ jobs:
 
   deploy-pc2:
     name: 🚀 Deploy on PC2
-    # SÉCURITÉ MAXIMALE : On attend que TOUT soit vert (Tests + Sécurité + Build Docker)
     needs: [testing, sast-analysis, docker-build]
     if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, production-pc]
@@ -175,12 +174,12 @@ jobs:
       - name: 🚚 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🚚 Checkout Code
-        uses: actions/checkout@v4
-
       - name: 🔄 Update & Restart Service
         shell: powershell
         run: |
+          # Correction de l'affichage des caractères spéciaux dans les logs
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
           # --- CONFIGURATION ---
           $ROOT = "C:\PayeTonKawa"
           $INFRA_DIR = "$ROOT\ptk-infrastructure"
@@ -188,7 +187,7 @@ jobs:
 
           Write-Host "🔥 DÉBUT DU DÉPLOIEMENT : $SERVICE_NAME"
 
-          # 1. Mise à jour du code source du Micro-Service
+          # 1. Mise à jour du code source
           Write-Host "📥 Pull du code source..."
           cd "$ROOT\$SERVICE_NAME"
           git fetch origin
@@ -199,42 +198,47 @@ jobs:
           cd $INFRA_DIR
           git pull origin main
 
-          # 3. Génération du .env DANS le dossier INFRA
+          # 3. Génération du .env (CORRECTION ENCODAGE ASCII)
           Write-Host "🔑 Génération des secrets..."
 
+          # On supprime l'ancien fichier s'il existe
           if (Test-Path .env) { Remove-Item .env }
 
-          # NOTE : On met PORT=3000 partout car c'est le port INTERNE du conteneur.
-          # Docker fait le mapping vers l'extérieur (ex: 3002->3000) automatiquement.
+          # On prépare le contenu dans une variable (plus propre)
+          $EnvContent = @()
 
           if ($SERVICE_NAME -eq "ptk-auth-service") {
-             echo "DATABASE_URL=${{ secrets.AUTH_DATABASE_URL }}" >> .env
-             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-             echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> .env
-             echo "PORT=3000" >> .env
+             $EnvContent += "DATABASE_URL=${{ secrets.AUTH_DATABASE_URL }}"
+             $EnvContent += "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+             $EnvContent += "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}"
+             $EnvContent += "PORT=3000"
           }
           elseif ($SERVICE_NAME -eq "ptk-product-service") {
-             echo "DATABASE_URL=${{ secrets.PRODUCT_DATABASE_URL }}" >> .env
-             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-             echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> .env
-             echo "PORT=3000" >> .env
+             $EnvContent += "DATABASE_URL=${{ secrets.PRODUCT_DATABASE_URL }}"
+             $EnvContent += "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+             $EnvContent += "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}"
+             $EnvContent += "PORT=3000"
           }
           elseif ($SERVICE_NAME -eq "ptk-order-service") {
-             echo "DATABASE_URL=${{ secrets.ORDER_DATABASE_URL }}" >> .env
-             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-             echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> .env
-             echo "PORT=3000" >> .env
+             $EnvContent += "DATABASE_URL=${{ secrets.ORDER_DATABASE_URL }}"
+             $EnvContent += "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+             $EnvContent += "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}"
+             $EnvContent += "PORT=3000"
           }
           elseif ($SERVICE_NAME -eq "ptk-client-service") {
-             echo "DATABASE_URL=${{ secrets.CLIENT_DATABASE_URL }}" >> .env
-             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-             echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> .env
-             echo "PORT=3000" >> .env
+             $EnvContent += "DATABASE_URL=${{ secrets.CLIENT_DATABASE_URL }}"
+             $EnvContent += "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+             $EnvContent += "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}"
+             $EnvContent += "PORT=3000"
           }
+
+          # ÉCRITURE DU FICHIER EN ASCII FORCE (C'est la clé du fix !)
+          $EnvContent | Out-File -FilePath .env -Encoding ascii
 
           # 4. Relancer le conteneur
           Write-Host "🐳 Redémarrage du conteneur..."
-          docker-compose up -d --build --no-deps $SERVICE_NAME
+          # Note : Utilisation de 'docker compose' (avec espace)
+          docker compose up -d --build --no-deps $SERVICE_NAME
 
           # 5. Nettoyage
           docker image prune -f
